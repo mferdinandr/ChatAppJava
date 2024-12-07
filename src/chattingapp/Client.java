@@ -84,6 +84,7 @@ public class Client implements ActionListener {
 
         a1 = new JPanel();
         a1.setBounds(5, 75, 440, 570);
+        a1.setLayout(new BoxLayout(a1, BoxLayout.Y_AXIS));
         f.add(a1);
 
         text = new JTextField();
@@ -91,6 +92,11 @@ public class Client implements ActionListener {
         text.setFont(new Font("SAN_SERIF", Font.PLAIN, 16));
         f.add(text);
 
+        JScrollPane scrollPane = new JScrollPane(a1);
+        scrollPane.setBounds(5, 75, 440, 570);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        f.add(scrollPane);
+        
         // Add ActionListener to the text field to detect Enter key
         text.addActionListener(this);
 
@@ -137,7 +143,7 @@ public class Client implements ActionListener {
                 return;
             }
 
-            // Format the message
+            a1.setLayout(new BoxLayout(a1, BoxLayout.Y_AXIS));
 
             // Update the chat panel
             a1.setLayout(new BorderLayout());
@@ -149,6 +155,12 @@ public class Client implements ActionListener {
             vertical.add(Box.createVerticalStrut(15));
 
             a1.add(vertical, BorderLayout.PAGE_START);
+
+            SwingUtilities.invokeLater(() -> {
+                JScrollBar verticalScrollBar = ((JScrollPane) a1.getParent()).getVerticalScrollBar();
+                verticalScrollBar.setValue(verticalScrollBar.getMaximum());
+            });
+
 
             // Send the message to the client
             dout.writeUTF(out);

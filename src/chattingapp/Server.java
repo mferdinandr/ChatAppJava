@@ -12,7 +12,7 @@ import java.io.*;
 public class Server implements ActionListener {
 
     JTextField text;
-    JPanel a1;
+    static JPanel a1;
     static Box vertical = Box.createVerticalBox();
     static JFrame f = new JFrame();
     static DataOutputStream dout;
@@ -85,13 +85,20 @@ public class Server implements ActionListener {
 
         a1 = new JPanel();
         a1.setBounds(5, 75, 440, 570);
+        a1.setLayout(new BoxLayout(a1, BoxLayout.Y_AXIS));
         f.add(a1);
 
         text = new JTextField();
         text.setBounds(5, 655, 310, 40);
         text.setFont(new Font("SAN_SERIF", Font.PLAIN, 16));
         f.add(text);
+        
+        JScrollPane scrollPane = new JScrollPane(a1);
+        scrollPane.setBounds(5, 75, 440, 570);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
+        f.add(scrollPane);
+        
         // Add ActionListener to the text field to detect Enter key
         text.addActionListener(this);
 
@@ -140,6 +147,7 @@ public class Server implements ActionListener {
             // Format the message
 
             // Update the chat panel
+            a1.setLayout(new BoxLayout(a1, BoxLayout.Y_AXIS));
             a1.setLayout(new BorderLayout());
 
             // Add the message to the right side
@@ -149,6 +157,11 @@ public class Server implements ActionListener {
             vertical.add(Box.createVerticalStrut(15));
 
             a1.add(vertical, BorderLayout.PAGE_START);
+            
+            SwingUtilities.invokeLater(() -> {
+                JScrollBar verticalScrollBar = ((JScrollPane) a1.getParent()).getVerticalScrollBar();
+                verticalScrollBar.setValue(verticalScrollBar.getMaximum());
+            });
 
             // Send the message to the client
             dout.writeUTF(out);
@@ -251,7 +264,6 @@ public static void deleteMessage(int id) {
                         f.validate();
                     }
                 }
-
 
             }
         } catch (Exception e) {
