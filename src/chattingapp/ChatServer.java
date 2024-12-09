@@ -52,5 +52,9 @@ public class ChatServer {
 
     public static void main(String[] args) {
         new ChatServer();
+
+        String profilePicturePath = "icons/onet.png"
+
+        ServerUI serverUI = new ServerUI(new ChatServer(), profilePicturePath)
     }
 }
