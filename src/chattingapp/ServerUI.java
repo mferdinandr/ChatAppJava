@@ -81,4 +81,17 @@ public class ServerUI extends JFrame implements ActionListener {
         });
     }
 
-    public void action
+    public void actionPerformed(ActionEvent ae) {
+    try {
+        String messageContent = text.getText().trim();
+        if (!messageContent.isEmpty()) {
+            // Create a Message object and send it to the server
+            Message message = new Message(messageContent, "YourName", Instant.now(), messageID++);
+            chatServer.getDataOutputStream().writeUTF(messageContent);
+            addMessageToUI(message); // Update the UI with the new message
+            text.setText(""); // Clear the input field
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
