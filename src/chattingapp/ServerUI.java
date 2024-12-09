@@ -1,11 +1,9 @@
 package chattingapp;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,9 +13,12 @@ public class ServerUI extends JFrame implements ActionListener {
     private Map<Integer, JPanel> messages = new HashMap<>();
     private ChatServer chatServer;
     private static int messageID = 0;
+    private String profilePicturePath; // Path to the profile picture
 
-    public ServerUI(ChatServer chatServer) {
+    // Constructor accepting profile picture path
+    public ServerUI(ChatServer chatServer, String profilePicturePath) {
         this.chatServer = chatServer;
+        this.profilePicturePath = profilePicturePath; // Store the profile picture path
         initializeUI();
     }
 
@@ -28,7 +29,7 @@ public class ServerUI extends JFrame implements ActionListener {
         setUndecorated(true);
         getContentPane().setBackground(Color.WHITE);
 
-        createHeader();
+        createHeader(); // Create the header panel
         createMessagePanel();
         createInputField();
 
@@ -42,9 +43,50 @@ public class ServerUI extends JFrame implements ActionListener {
         header.setLayout(null);
         add(header);
 
-        // Add components to header (back button, profile, etc.)
-        // Similar to the original code, but extracted into methods for clarity
-        // ...
+        // Back button
+        ImageIcon backIcon = new ImageIcon(ClassLoader.getSystemResource("icons/3.png"));
+        Image backImage = backIcon.getImage().getScaledInstance(25, 25, Image.SCALE_DEFAULT);
+        JLabel back = new JLabel(new ImageIcon(backImage));
+        back.setBounds(5, 20, 25, 25);
+        header.add(back);
+        back.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent ae) {
+                System.exit(0); // Close the application
+            }
+        });
+
+        // Profile picture from the passed path
+        ImageIcon profileIcon = new ImageIcon(profilePicturePath); // Use the passed path
+        Image profileImage = profileIcon.getImage().getScaledInstance(50, 50, Image.SCALE_DEFAULT);
+        JLabel profile = new JLabel(new ImageIcon(profileImage));
+        profile.setBounds(40, 10, 50, 50);
+        header.add(profile);
+
+        // Other icons (video, phone, more options)
+        addIconToHeader(header, "icons/video.png", 300, 20, 30, 30);
+        addIconToHeader(header, "icons/phone.png", 360, 20, 35, 30);
+        addIconToHeader(header, "icons/3icon.png", 420, 20, 10, 25);
+
+        // Name and status labels
+        JLabel name = new JLabel("Onet");
+        name.setBounds(110, 15, 100, 18);
+        name.setForeground(Color.WHITE);
+        name.setFont(new Font("SAN_SERIF", Font.BOLD, 18));
+        header.add(name);
+
+        JLabel status = new JLabel("Active Now");
+        status.setBounds(110, 35, 100, 18);
+        status.setForeground(Color.WHITE);
+        status.setFont(new Font("SAN_SERIF", Font.BOLD, 14));
+        header.add(status);
+    }
+
+    private void addIconToHeader(JPanel header, String iconPath, int x, int y, int width, int height) {
+        ImageIcon icon = new ImageIcon(ClassLoader.getSystemResource(iconPath));
+        Image image = icon.getImage().getScaledInstance(width, height, Image.SCALE_DEFAULT);
+        JLabel label = new JLabel(new ImageIcon(image));
+        label.setBounds(x, y, width, height);
+        header.add(label);
     }
 
     private void createMessagePanel() {
@@ -56,42 +98,3 @@ public class ServerUI extends JFrame implements ActionListener {
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         add(scrollPane);
     }
-
-    private void createInputField() {
-        text = new JTextField();
-        text.setBounds(5, 655, 310, 40);
-        text.setFont(new Font("SAN_SERIF", Font.PLAIN, 16));
-        add(text);
-
-        JButton sendButton = new JButton("Send");
-        sendButton.setBounds(320, 655, 123, 40);
-        sendButton.setBackground(new Color(7, 94, 84));
-        sendButton.setForeground(Color.WHITE);
-        sendButton.addActionListener(this);
-        sendButton.setFont(new Font("SAN_SERIF", Font.PLAIN, 16));
-        add(sendButton);
-
-        text.addActionListener(this);
-        text.addKeyListener(new KeyAdapter() {
-            public void keyPressed(KeyEvent ke) {
-                if (ke.getKeyCode() == KeyEvent.VK_ENTER) {
-                    actionPerformed(new ActionEvent(text, ActionEvent.ACTION_PERFORMED, ""));
-                }
-            }
-        });
-    }
-
-    public void actionPerformed(ActionEvent ae) {
-    try {
-        String messageContent = text.getText().trim();
-        if (!messageContent.isEmpty()) {
-            // Create a Message object and send it to the server
-            Message message = new Message(messageContent, "YourName", Instant.now(), messageID++);
-            chatServer.getDataOutputStream().writeUTF(messageContent);
-            addMessageToUI(message); // Update the UI with the new message
-            text.setText(""); // Clear the input field
-        }
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-}
