@@ -25,7 +25,7 @@ public class ServerUI extends JFrame {
 
         // Create the message area
         messageArea = new JTextArea();
- messageArea.setEditable(false);
+        messageArea.setEditable(false);
         add(new JScrollPane(messageArea), BorderLayout.CENTER);
 
         // Create the input field
@@ -51,27 +51,23 @@ public class ServerUI extends JFrame {
             String sender = "Server";
             Instant timestamp = Instant.now();
             int messageId = messageManager.getMessages().size() + 1;
-
-            Message message = new Message(content, sender, timestamp, messageId);
-            messageManager.addMessage(message);
-            messageArea.append("You: " + content + "\n");
-            textField.setText("");
-
-            // Broadcast the message to clients
-            chatServer.broadcast(content);
+            messageManager.addMessage(new Message(content, sender, timestamp, messageId));
+            messageArea.append(sender + ": " + content + "\n");
+            textField.setText(""); // Clear the input field
+            chatServer.broadcast(sender + ": " + content); // Broadcast the message to all clients
         }
     }
 
     private void launchChatClient() {
-        // Launch a new ChatClient instance
-        new Thread(() -> {
-            ChatClient client = new ChatClient("localhost");
-        }).start();
-    }
-
+    // Launch a new ChatClient instance
+        SwingUtilities.invokeLater(() -> {
+        new ChatClient("localhost").setVisible(true);
+    });
+}
     public static void main(String[] args) {
-        ChatServer server = new ChatServer();
-        new Thread(server::start).start(); // Start the server in a new thread
-        SwingUtilities.invokeLater(() -> new ServerUI(server).setVisible(true)); // Start the UI
+        ChatServer chatServer = new ChatServer();
+        ServerUI serverUI = new ServerUI(chatServer);
+        serverUI.setVisible(true);
+        chatServer.start(); // Start the chat server
     }
 }
