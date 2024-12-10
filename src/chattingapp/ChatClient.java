@@ -6,8 +6,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
 
 public class ChatClient extends JFrame {
     private Socket socket;
@@ -16,9 +14,8 @@ public class ChatClient extends JFrame {
     private JPanel messagePanel;
     private JTextField textField;
     private String username;
-    private List<JPanel> messageContainers = new ArrayList<>();
-    
- public ChatClient(String serverAddress) {
+
+    public ChatClient(String serverAddress) {
         // Prompt for username
         username = JOptionPane.showInputDialog("Enter your username:");
         setupUI();
@@ -94,74 +91,41 @@ private void setupUI() {
     setVisible(true);
 }
 
- private JPanel createMessageContainer(String sender, String message, boolean isSender, String time) {
-        // Container for the message
-        JPanel messageContainer = new JPanel();
-        messageContainer.setLayout(new BorderLayout());
-        messageContainer.setAlignmentX(isSender ? Component.RIGHT_ALIGNMENT : Component.LEFT_ALIGNMENT);
+private void addMessage(String sender, String message, boolean isSender, String time) {
+    // Container for the message
+    JPanel messageContainer = new JPanel();
+    messageContainer.setLayout(new BoxLayout(messageContainer, BoxLayout.Y_AXIS));
+    messageContainer.setAlignmentX(isSender ? Component.RIGHT_ALIGNMENT : Component.LEFT_ALIGNMENT);
 
-        // Message details panel
-        JPanel messageDetailsPanel = new JPanel();
-        messageDetailsPanel.setLayout(new BoxLayout(messageDetailsPanel, BoxLayout.Y_AXIS));
+    // Add username label
+    JLabel usernameLabel = new JLabel(sender);
+    usernameLabel.setFont(new Font("Arial", Font.BOLD, 12));
+    usernameLabel.setForeground(Color.GRAY);
+    messageContainer.add(usernameLabel);
 
-        // Add username label
-        JLabel usernameLabel = new JLabel(sender);
-        usernameLabel.setFont(new Font("Arial", Font.BOLD, 12));
-        usernameLabel.setForeground(Color.GRAY);
-        messageDetailsPanel.add(usernameLabel);
+    // Add message bubble
+    JLabel messageLabel = new JLabel("<html>" + message + "</html>");
+    messageLabel.setOpaque(true);
+    messageLabel.setBackground(isSender ? new Color(0, 204, 102) : Color.WHITE); // Green for sender
+    messageLabel.setForeground(Color.BLACK);
+    messageLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+    messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    messageContainer.add(messageLabel);
 
-        // Add message bubble
-        JLabel messageLabel = new JLabel("<html>" + message + "</html>");
-        messageLabel.setOpaque(true);
-        messageLabel.setBackground(isSender ? new Color(0, 204, 102) : Color.WHITE); // Green for sender
-        messageLabel.setForeground(Color.BLACK);
-        messageLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        messageDetailsPanel.add(messageLabel);
+    // Add timestamp label (HH:mm format)
+    JLabel timeLabel = new JLabel(time);
+    timeLabel.setFont(new Font("Arial", Font.ITALIC, 10));
+    timeLabel.setForeground(Color.GRAY);
+    messageContainer.add(timeLabel);
 
-        // Add timestamp label (HH:mm format)
-        JLabel timeLabel = new JLabel(time);
-        timeLabel.setFont(new Font("Arial", Font.ITALIC, 10));
-        timeLabel.setForeground(Color.GRAY);
-        messageDetailsPanel.add(timeLabel);
+    // Add padding between messages
+    messageContainer.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
 
-        messageContainer.add(messageDetailsPanel, BorderLayout.CENTER);
-
-        // Add delete button for sender's messages
-        if (isSender) {
-            JButton deleteButton = new JButton("Delete");
-            deleteButton.setFont(new Font("Arial", Font.PLAIN, 10));
-            deleteButton.setBackground(Color.RED);
-            deleteButton.setForeground(Color.WHITE);
-            deleteButton.addActionListener(e -> {
-                // Send delete request to server
-                out.println("DELETE_MESSAGE:" + sender + ":" + message + ":" + time);
-                messageContainer.removeAll();
-                JLabel deletedLabel = new JLabel("Message deleted");
-                deletedLabel.setForeground(Color.GRAY);
-                deletedLabel.setFont(new Font("Arial", Font.ITALIC, 14));
-                messageContainer.add(deletedLabel);
-                messageContainer.revalidate();
-                messageContainer.repaint();
-            });
-            messageContainer.add(deleteButton, BorderLayout.EAST);
-        }
-
-        // Add padding between messages
-        messageContainer.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
-
-        return messageContainer;
-    }
-
-    private void addMessage(String sender, String message, boolean isSender, String time) {
-        JPanel messageContainer = createMessageContainer(sender, message, isSender, time);
-        
-        // Add the container to the main message panel
-        messagePanel.add(messageContainer);
-        messageContainers.add(messageContainer);
-        messagePanel.revalidate();
-        messagePanel.repaint();
-    }
+    // Add the container to the main message panel
+    messagePanel.add(messageContainer);
+    messagePanel.revalidate();
+    messagePanel.repaint();
+}
 
     
 private String getCurrentTime() {
@@ -180,73 +144,34 @@ private void sendMessage() {
     }
 }
 
- private class IncomingReader implements Runnable {
-        public void run() {
-            String message;
-            try {
-                while ((message = in.readLine()) != null) {
-                    // Check if it's a delete message
-                    if (message.startsWith("DELETE_MESSAGE:")) {
-                        handleDeleteMessage(message);
-                    } else {
-                        // Regular message handling
-                        int colonIndex = message.indexOf(":");
-                        if (colonIndex != -1) {
-                            String sender = message.substring(0, colonIndex);
-                            String messageContent = message.substring(colonIndex + 1).trim();
 
-                            // Extract the time from the message
-                            int timeIndex = messageContent.lastIndexOf(" [");
-                            String time = messageContent.substring(timeIndex + 2, messageContent.length() - 1);
+private class IncomingReader implements Runnable {
+    public void run() {
+        String message;
+        try {
+            while ((message = in.readLine()) != null) {
+                // Extract username and message
+                int colonIndex = message.indexOf(":");
+                if (colonIndex != -1) {
+                    String sender = message.substring(0, colonIndex); // Extract sender username
+                    String messageContent = message.substring(colonIndex + 1).trim(); // Extract message content
 
-                            // Skip displaying the message if it's from the current user
-                            if (!sender.equals(username)) {
-                                addMessage(sender, messageContent.substring(0, timeIndex), false, time);
-                            }
-                        }
+                    // Extract the time from the message
+                    int timeIndex = messageContent.lastIndexOf(" [");
+                    String time = messageContent.substring(timeIndex + 2, messageContent.length() - 1); // Extract the time in HH:mm format
+
+                    // Skip displaying the message if it's from the current user
+                    if (!sender.equals(username)) {
+                        addMessage(sender, messageContent.substring(0, timeIndex), false, time); // Display only messages from others
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-        }
-        
-          private void handleDeleteMessage(String deleteMessage) {
-            // Format: DELETE_MESSAGE:sender:message:time
-            String[] parts = deleteMessage.split(":", 4);
-            if (parts.length == 4) {
-                String sender = parts[1];
-                String originalMessage = parts[2];
-                String time = parts[3];
-
-                SwingUtilities.invokeLater(() -> {
-                    for (JPanel container : messageContainers) {
-                        Component[] components = container.getComponents();
-                        for (Component comp : components) {
-                            if (comp instanceof JPanel) {
-                                JPanel detailsPanel = (JPanel) comp;
-                                for (Component innerComp : detailsPanel.getComponents()) {
-                                    if (innerComp instanceof JLabel) {
-                                        JLabel label = (JLabel) innerComp;
-                                        if (label.getText().contains(originalMessage)) {
-                                            container.removeAll();
-                                            JLabel deletedLabel = new JLabel("Message deleted");
-                                            deletedLabel.setForeground(Color.GRAY);
-                                            deletedLabel.setFont(new Font("Arial", Font.ITALIC, 14));
-                                            container.add(deletedLabel);
-                                            container.revalidate();
-                                            container.repaint();
-                                            return;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
+}
+
 
 
     public static void main(String[] args) {
