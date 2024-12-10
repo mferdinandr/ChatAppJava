@@ -91,47 +91,61 @@ private void setupUI() {
     setVisible(true);
 }
 
-    private void addMessage(String sender, String message, boolean isSender) {
-        // Container for the message
-        JPanel messageContainer = new JPanel();
-        messageContainer.setLayout(new BoxLayout(messageContainer, BoxLayout.Y_AXIS));
-        messageContainer.setAlignmentX(isSender ? Component.RIGHT_ALIGNMENT : Component.LEFT_ALIGNMENT);
+private void addMessage(String sender, String message, boolean isSender, String time) {
+    // Container for the message
+    JPanel messageContainer = new JPanel();
+    messageContainer.setLayout(new BoxLayout(messageContainer, BoxLayout.Y_AXIS));
+    messageContainer.setAlignmentX(isSender ? Component.RIGHT_ALIGNMENT : Component.LEFT_ALIGNMENT);
 
-        // Add username label
-        JLabel usernameLabel = new JLabel(sender);
-        usernameLabel.setFont(new Font("Arial", Font.BOLD, 12));
-        usernameLabel.setForeground(Color.GRAY);
-        messageContainer.add(usernameLabel);
+    // Add username label
+    JLabel usernameLabel = new JLabel(sender);
+    usernameLabel.setFont(new Font("Arial", Font.BOLD, 12));
+    usernameLabel.setForeground(Color.GRAY);
+    messageContainer.add(usernameLabel);
 
-        // Add message bubble
-        JLabel messageLabel = new JLabel("<html>" + message + "</html>");
-        messageLabel.setOpaque(true);
-        messageLabel.setBackground(isSender ? new Color(0, 204, 102) : Color.WHITE); // Green for sender
-        messageLabel.setForeground(Color.BLACK);
-        messageLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        messageContainer.add(messageLabel);
+    // Add message bubble
+    JLabel messageLabel = new JLabel("<html>" + message + "</html>");
+    messageLabel.setOpaque(true);
+    messageLabel.setBackground(isSender ? new Color(0, 204, 102) : Color.WHITE); // Green for sender
+    messageLabel.setForeground(Color.BLACK);
+    messageLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+    messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    messageContainer.add(messageLabel);
 
-        // Add padding between messages
-        messageContainer.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+    // Add timestamp label (HH:mm format)
+    JLabel timeLabel = new JLabel(time);
+    timeLabel.setFont(new Font("Arial", Font.ITALIC, 10));
+    timeLabel.setForeground(Color.GRAY);
+    messageContainer.add(timeLabel);
 
-        // Add the container to the main message panel
-        messagePanel.add(messageContainer);
-        messagePanel.revalidate();
-        messagePanel.repaint();
-    }
+    // Add padding between messages
+    messageContainer.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+    // Add the container to the main message panel
+    messagePanel.add(messageContainer);
+    messagePanel.revalidate();
+    messagePanel.repaint();
+}
+
+    
+private String getCurrentTime() {
+    return java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+}
+
 
 private void sendMessage() {
     String message = textField.getText();
     if (!message.isEmpty()) {
-        String formattedMessage = username + ": " + message;
-        out.println(formattedMessage); // Send the message to the server
-        addMessage(username, message, true); // Display the message on the right
+        String time = getCurrentTime(); // Mendapatkan waktu saat ini
+        String formattedMessage = username + ": " + message + " [" + time + "]"; // Tambahkan waktu ke pesan
+        out.println(formattedMessage); // Kirim pesan ke server
+        addMessage(username, message, true, time); // Display the message on the right with time
         textField.setText(""); // Clear the input field
     }
 }
 
-   private class IncomingReader implements Runnable {
+
+private class IncomingReader implements Runnable {
     public void run() {
         String message;
         try {
@@ -142,9 +156,13 @@ private void sendMessage() {
                     String sender = message.substring(0, colonIndex); // Extract sender username
                     String messageContent = message.substring(colonIndex + 1).trim(); // Extract message content
 
+                    // Extract the time from the message
+                    int timeIndex = messageContent.lastIndexOf(" [");
+                    String time = messageContent.substring(timeIndex + 2, messageContent.length() - 1); // Extract the time in HH:mm format
+
                     // Skip displaying the message if it's from the current user
                     if (!sender.equals(username)) {
-                        addMessage(sender, messageContent, false); // Display only messages from others
+                        addMessage(sender, messageContent.substring(0, timeIndex), false, time); // Display only messages from others
                     }
                 }
             }
@@ -153,6 +171,7 @@ private void sendMessage() {
         }
     }
 }
+
 
 
     public static void main(String[] args) {
