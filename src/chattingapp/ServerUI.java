@@ -17,33 +17,80 @@ public class ServerUI extends JFrame {
         setupUI();
     }
 
-    private void setupUI() {
-        setTitle("Chat Server");
-        setSize(500, 400);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
+private void setupUI() {
+    // Set frame properties
+    setTitle("Chat Server");
+    setSize(500, 400);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setLayout(new BorderLayout());
+    
 
-        // Create the message area
-        messageArea = new JTextArea();
-        messageArea.setEditable(false);
-        add(new JScrollPane(messageArea), BorderLayout.CENTER);
+    // Create a header panel
+    JPanel headerPanel = new JPanel();
+    headerPanel.setBackground(new Color(0, 102, 204)); // Blue background
+    headerPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
 
-        // Create the input field
-        textField = new JTextField();
-        add(textField, BorderLayout.SOUTH);
+    // Add title label
+    JLabel titleLabel = new JLabel("Chat Server Application");
+    titleLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+    titleLabel.setForeground(Color.WHITE);
+    headerPanel.add(titleLabel);
 
-        // Add action listener for sending messages
-        textField.addActionListener((ActionEvent e) -> {
-            sendMessage();
-        });
+    add(headerPanel, BorderLayout.NORTH);
 
-        // Add a button to launch the ChatClient
-        JButton launchClientButton = new JButton("Launch Client");
-        launchClientButton.addActionListener((ActionEvent e) -> {
-            launchChatClient();
-        });
-        add(launchClientButton, BorderLayout.EAST);
-    }
+    // Create main content panel with GridBagLayout
+    JPanel mainPanel = new JPanel();
+    mainPanel.setBackground(new Color(0, 153, 255)); // Light blue
+    mainPanel.setLayout(new GridBagLayout());
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(10, 10, 10, 10); // Add some spacing between elements
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+    gbc.anchor = GridBagConstraints.CENTER;
+
+    // Add logo
+    JLabel logoLabel = new JLabel();
+    ImageIcon logoIcon = new ImageIcon(ClassLoader.getSystemResource("icons/logo.png"));
+    // Resize the logo
+    Image scaledImage = logoIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH); // Resize to 100x100
+    logoLabel.setIcon(new ImageIcon(scaledImage));
+    mainPanel.add(logoLabel, gbc);
+
+    // Add instruction text
+    gbc.gridy++; // Move to the next row
+    JLabel instructionLabel = new JLabel("Klik tombol untuk memulai chat");
+    instructionLabel.setFont(new Font("SansSerif", Font.PLAIN, 16));
+    instructionLabel.setForeground(Color.WHITE);
+    mainPanel.add(instructionLabel, gbc);
+
+    add(mainPanel, BorderLayout.CENTER);
+
+    // Create footer panel with a button
+    JPanel footerPanel = new JPanel();
+    footerPanel.setBackground(new Color(230, 230, 230)); // Light gray for button background contrast
+    footerPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+
+    // Add a button to start chat
+    JButton startChatButton = new JButton("Mulai Chat");
+    startChatButton.setFont(new Font("Arial", Font.PLAIN, 16));
+    startChatButton.setBackground(new Color(255, 69, 0)); // Bright orange
+    startChatButton.setForeground(Color.WHITE);
+    startChatButton.setFocusPainted(false);
+    startChatButton.setBorderPainted(false);
+    startChatButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+    // Add action listener to launch chat client
+    startChatButton.addActionListener((ActionEvent e) -> {
+        launchChatClient();
+    });
+
+    footerPanel.add(startChatButton);
+    add(footerPanel, BorderLayout.SOUTH);
+
+    // Set the frame visible
+    setVisible(true);
+    setLocationRelativeTo(null); // This will center the frame on the screen
+}
 
     private void sendMessage() {
         String content = textField.getText();

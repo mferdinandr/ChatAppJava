@@ -11,7 +11,7 @@ public class ChatClient extends JFrame {
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
-    private JTextArea messageArea;
+    private JPanel messagePanel;
     private JTextField textField;
     private String username;
 
@@ -34,8 +34,8 @@ public class ChatClient extends JFrame {
         }
     }
 
-    private void setupUI() {
-    setTitle("Chat Client - " + username);
+private void setupUI() {
+    setTitle(username);
     setSize(400, 600);
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     setLayout(new BorderLayout());
@@ -62,54 +62,98 @@ public class ChatClient extends JFrame {
 
     add(headerPanel, BorderLayout.NORTH);
 
-    // Create the message area
-    messageArea = new JTextArea();
-    messageArea.setEditable(false);
-    messageArea.setLineWrap(true);
-    messageArea.setWrapStyleWord(true);
-    JScrollPane scrollPane = new JScrollPane(messageArea);
+    // Create the message panel
+    messagePanel = new JPanel();
+    messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.Y_AXIS));
+    JScrollPane scrollPane = new JScrollPane(messagePanel);
     add(scrollPane, BorderLayout.CENTER);
 
-    // Create the input field
+    // Create input and button panel
+    JPanel inputPanel = new JPanel();
+    inputPanel.setLayout(new BorderLayout());
+
     textField = new JTextField();
     textField.setFont(new Font("Arial", Font.PLAIN, 16));
-    add(textField, BorderLayout.SOUTH);
+    inputPanel.add(textField, BorderLayout.CENTER);
 
-    // Add action listener for sending messages
-    textField.addActionListener(new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            sendMessage();
-        }
-    });
+    JButton sendButton = new JButton("Send");
+    sendButton.setFont(new Font("Arial", Font.BOLD, 16));
+    sendButton.setBackground(new Color(0, 153, 51));
+    sendButton.setForeground(Color.WHITE);
+    inputPanel.add(sendButton, BorderLayout.EAST);
 
-    setVisible(true); // Make the client visible
+    // Add action listeners
+    textField.addActionListener(e -> sendMessage());
+    sendButton.addActionListener(e -> sendMessage());
+
+    add(inputPanel, BorderLayout.SOUTH);
+
+    setVisible(true);
 }
 
-    private void sendMessage() {
-        String message = textField.getText();
-        if (!message.isEmpty()) {
-            String formattedMessage = username + ": " + message;
-            out.println(formattedMessage); // Send the message to the server
-            messageArea.append(formattedMessage + "\n"); // Display the message in the chat area
-            textField.setText(""); // Clear the input field
-        }
+    private void addMessage(String sender, String message, boolean isSender) {
+        // Container for the message
+        JPanel messageContainer = new JPanel();
+        messageContainer.setLayout(new BoxLayout(messageContainer, BoxLayout.Y_AXIS));
+        messageContainer.setAlignmentX(isSender ? Component.RIGHT_ALIGNMENT : Component.LEFT_ALIGNMENT);
+
+        // Add username label
+        JLabel usernameLabel = new JLabel(sender);
+        usernameLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        usernameLabel.setForeground(Color.GRAY);
+        messageContainer.add(usernameLabel);
+
+        // Add message bubble
+        JLabel messageLabel = new JLabel("<html>" + message + "</html>");
+        messageLabel.setOpaque(true);
+        messageLabel.setBackground(isSender ? new Color(0, 204, 102) : Color.WHITE); // Green for sender
+        messageLabel.setForeground(Color.BLACK);
+        messageLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        messageContainer.add(messageLabel);
+
+        // Add padding between messages
+        messageContainer.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        // Add the container to the main message panel
+        messagePanel.add(messageContainer);
+        messagePanel.revalidate();
+        messagePanel.repaint();
     }
 
-    private class IncomingReader implements Runnable {
-        public void run() {
-            String message;
-            try {
-                while ((message = in.readLine()) != null) {
-                    // Check if the message is from the current user
-                    if (!message.startsWith(username + ":")) {
-                        messageArea.append(message + "\n"); } // Display messages from the server that are not from the current user
+private void sendMessage() {
+    String message = textField.getText();
+    if (!message.isEmpty()) {
+        String formattedMessage = username + ": " + message;
+        out.println(formattedMessage); // Send the message to the server
+        addMessage(username, message, true); // Display the message on the right
+        textField.setText(""); // Clear the input field
+    }
+}
+
+   private class IncomingReader implements Runnable {
+    public void run() {
+        String message;
+        try {
+            while ((message = in.readLine()) != null) {
+                // Extract username and message
+                int colonIndex = message.indexOf(":");
+                if (colonIndex != -1) {
+                    String sender = message.substring(0, colonIndex); // Extract sender username
+                    String messageContent = message.substring(colonIndex + 1).trim(); // Extract message content
+
+                    // Skip displaying the message if it's from the current user
+                    if (!sender.equals(username)) {
+                        addMessage(sender, messageContent, false); // Display only messages from others
+                    }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
+}
+
 
     public static void main(String[] args) {
         new ChatClient("localhost"); // Replace with your server address
